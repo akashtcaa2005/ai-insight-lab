@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Insight Lab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔬</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0E11;
+    --surface: #12171C;
+    --surface-raised: #161C22;
+    --border: #232B32;
+    --border-light: #2C353D;
+    --text: #E6EDF3;
+    --text-muted: #8B98A5;
+    --text-dim: #5B6672;
+    --accent: #4FD1C5;
+    --accent-dim: #2F8F86;
+    --amber: #F2C94C;
+    --danger: #F87171;
+    --success: #34D399;
+    --purple: #818CF8;
+    --radius: 5px;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:
+      linear-gradient(var(--bg),var(--bg)),
+      repeating-linear-gradient(0deg, rgba(79,209,197,0.025) 0px, rgba(79,209,197,0.025) 1px, transparent 1px, transparent 32px),
+      repeating-linear-gradient(90deg, rgba(79,209,197,0.025) 0px, rgba(79,209,197,0.025) 1px, transparent 1px, transparent 32px);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#06110F;}
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:5px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--accent-dim);}
+
+  .mono{font-family:var(--mono);}
+  a{color:var(--accent);}
+
+  /* ---------- layout ---------- */
+  #app{display:flex; min-height:100vh;}
+
+  #sidebar{
+    width:230px; flex-shrink:0;
+    border-right:1px solid var(--border);
+    background:var(--surface);
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  #brand{
+    padding:20px 20px 16px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  #brand .logo{
+    font-size:15px; font-weight:700; letter-spacing:.02em;
+    display:flex; align-items:center; gap:8px;
+  }
+  #brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent); box-shadow:0 0 8px var(--accent);}
+  #brand .tagline{font-size:11px; color:var(--text-dim); margin-top:4px; font-family:var(--mono);}
+
+  nav{padding:14px 10px; display:flex; flex-direction:column; gap:2px; flex:1; overflow-y:auto;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 12px; border-radius:var(--radius);
+    color:var(--text-muted); font-size:13.5px; cursor:pointer;
+    border:1px solid transparent;
+    transition:background .12s ease, color .12s ease;
+    user-select:none;
+  }
+  .nav-item .ic{width:16px;text-align:center;font-size:14px;opacity:.85;}
+  .nav-item:hover{background:var(--surface-raised); color:var(--text);}
+  .nav-item.active{background:rgba(79,209,197,0.08); color:var(--accent); border-color:rgba(79,209,197,0.25);}
+  .nav-item.locked{opacity:.35; cursor:not-allowed;}
+  .nav-item.locked:hover{background:transparent; color:var(--text-muted);}
+  .nav-section-label{font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--text-dim); padding:14px 12px 4px;}
+
+  #sidebar-footer{padding:14px; border-top:1px solid var(--border); font-size:10.5px; color:var(--text-dim); font-family:var(--mono); line-height:1.6;}
+
+  #main{flex:1; min-width:0; display:flex; flex-direction:column;}
+
+  #topbar{
+    height:56px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px; background:rgba(18,23,28,0.7); backdrop-filter:blur(6px);
+    position:sticky; top:0; z-index:20;
+  }
+  #dataset-chip{display:flex; align-items:center; gap:10px; font-size:13px;}
+  #dataset-chip .name{font-weight:600;}
+  #dataset-chip .stats{color:var(--text-muted); font-family:var(--mono); font-size:11.5px;}
+  #dataset-chip .empty{color:var(--text-dim); font-style:italic;}
+  .btn-ghost-sm{
+    font-size:12px; padding:6px 12px; border-radius:var(--radius);
+    border:1px solid var(--border-light); background:transparent; color:var(--text-muted);
+    cursor:pointer; font-family:var(--sans);
+  }
+  .btn-ghost-sm:hover{border-color:var(--accent); color:var(--accent);}
+
+  #content{flex:1; padding:26px 30px 60px 30px; max-width:1180px; width:100%;}
+
+  /* ---------- generic components ---------- */
+  h1.page-title{font-size:20px; font-weight:700; margin:0 0 4px 0;}
+  p.page-sub{color:var(--text-muted); font-size:13px; margin:0 0 24px 0;}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:18px 20px;
+  }
+  .grid{display:grid; gap:14px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media (max-width:900px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+
+  .stat-card .label{font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em;}
+  .stat-card .value{font-family:var(--mono); font-size:24px; font-weight:600; margin-top:6px;}
+  .stat-card .value.accent{color:var(--accent);}
+  .stat-card .value.warn{color:var(--amber);}
+  .stat-card .value.danger{color:var(--danger);}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 10px; color:var(--text-dim);
+    font-weight:500; text-transform:uppercase; font-size:10.5px; letter-spacing:.06em;
+    border-bottom:1px solid var(--border-light);
+  }
+  td{padding:8px 10px; border-bottom:1px solid var(--border); font-family:var(--mono);}
+  td.name-cell{font-family:var(--sans); font-weight:500;}
+  tr:hover td{background:rgba(255,255,255,0.015);}
+  .table-wrap{overflow-x:auto;}
+
+  .section-title{font-size:14px; font-weight:600; margin:0 0 12px 0; display:flex; align-items:center; gap:8px;}
+  .section-title .tag{font-size:10px; font-family:var(--mono); color:var(--text-dim); background:var(--surface-raised); border:1px solid var(--border-light); padding:2px 7px; border-radius:3px; font-weight:400;}
+
+  .badge{display:inline-block; font-size:10.5px; padding:2px 8px; border-radius:3px; font-family:var(--mono);}
+  .badge.ok{background:rgba(52,211,153,0.12); color:var(--success);}
+  .badge.warn{background:rgba(242,201,76,0.12); color:var(--amber);}
+  .badge.bad{background:rgba(248,113,113,0.12); color:var(--danger);}
+
+  .empty-state{
+    border:1px dashed var(--border-light); border-radius:var(--radius);
+    padding:50px 20px; text-align:center; color:var(--text-muted); font-size:13px;
+  }
+
+  img.chart{width:100%; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface-raised);}
+
+  select, input[type=text], input[type=number]{
+    background:var(--bg); border:1px solid var(--border-light); color:var(--text);
+    padding:8px 10px; border-radius:var(--radius); font-family:var(--sans); font-size:13px;
+    width:100%;
+  }
+  select:focus, input:focus{outline:none; border-color:var(--accent);}
+  label.field-label{font-size:11.5px; color:var(--text-muted); display:block; margin-bottom:6px; font-family:var(--mono);}
+
+  .btn{
+    background:var(--accent); color:#06110F; border:none; font-weight:600;
+    padding:10px 18px; border-radius:var(--radius); font-size:13px; cursor:pointer;
+    font-family:var(--sans);
+  }
+  .btn:hover{background:#69ddd2;}
+  .btn:disabled{background:var(--border-light); color:var(--text-dim); cursor:not-allowed;}
+  .btn.secondary{background:transparent; border:1px solid var(--border-light); color:var(--text);}
+  .btn.secondary:hover{border-color:var(--accent); color:var(--accent);}
+
+  .checkbox-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+  .check-item{
+    display:flex; align-items:center; gap:8px; padding:7px 10px;
+    border:1px solid var(--border-light); border-radius:var(--radius); font-size:12.5px; cursor:pointer;
+  }
+  .check-item:hover{border-color:var(--accent-dim);}
+  .check-item input{width:auto;}
+
+  .tabs-inline{display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid var(--border);}
+  .tab-inline{
+    padding:9px 4px; margin-right:14px; font-size:13px; color:var(--text-muted); cursor:pointer;
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .tab-inline.active{color:var(--accent); border-bottom-color:var(--accent);}
+
+  #toast-wrap{position:fixed; bottom:20px; right:20px; z-index:100; display:flex; flex-direction:column; gap:8px;}
+  .toast{
+    background:var(--surface-raised); border:1px solid var(--danger); color:var(--text);
+    padding:12px 16px; border-radius:var(--radius); font-size:13px; max-width:340px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4); animation:slidein .18s ease;
+  }
+  .toast.info{border-color:var(--accent);}
+  @keyframes slidein{from{transform:translateY(8px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+
+  .spinner{
+    width:15px;height:15px;border-radius:50%;
+    border:2px solid var(--border-light); border-top-color:var(--accent);
+    animation:spin .7s linear infinite; display:inline-block; vertical-align:middle;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-row{display:flex; align-items:center; gap:10px; color:var(--text-muted); font-size:13px; padding:30px 0; justify-content:center;}
+
+  /* home / upload screen */
+  #home-hero{padding:40px 0 20px;}
+  #home-hero h1{font-size:30px; margin:0 0 8px; font-weight:700; letter-spacing:-.01em;}
+  #home-hero p{color:var(--text-muted); font-size:14.5px; max-width:560px; line-height:1.55;}
+  #dropzone{
+    border:1px dashed var(--border-light); border-radius:8px; padding:36px; text-align:center;
+    margin:26px 0 30px; cursor:pointer; transition:border-color .15s;
+  }
+  #dropzone:hover, #dropzone.drag{border-color:var(--accent); background:rgba(79,209,197,0.03);}
+  #dropzone .icon{font-size:26px; margin-bottom:10px;}
+  #dropzone .hint{font-size:12px; color:var(--text-dim); margin-top:6px; font-family:var(--mono);}
+
+  .sample-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px;}
+  .sample-card{
+    border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px;
+    cursor:pointer; background:var(--surface);
+  }
+  .sample-card:hover{border-color:var(--accent); background:var(--surface-raised);}
+  .sample-card .icon{font-size:18px;}
+  .sample-card .title{font-size:13px; font-weight:600; margin-top:8px;}
+  .sample-card .desc{font-size:11px; color:var(--text-dim); margin-top:3px; font-family:var(--mono);}
+
+  .col-flex{display:flex; gap:20px; align-items:flex-start;}
+  .col-flex > *{flex:1; min-width:0;}
+
+  .strategy-select{width:auto; min-width:160px;}
+  .kv-row{display:flex; justify-content:space-between; padding:5px 0; font-size:12.5px; border-bottom:1px solid var(--border);}
+  .kv-row .k{color:var(--text-muted);}
+  .kv-row .v{font-family:var(--mono);}
+
+  .prob-bar-wrap{margin-top:4px;}
+  .prob-bar-row{display:flex; align-items:center; gap:8px; font-size:12px; margin-bottom:6px;}
+  .prob-bar-row .lbl{width:110px; flex-shrink:0; font-family:var(--mono);}
+  .prob-bar-track{flex:1; height:8px; background:var(--bg); border-radius:4px; overflow:hidden; border:1px solid var(--border-light);}
+  .prob-bar-fill{height:100%; background:var(--accent);}
+  .prob-bar-pct{width:48px; text-align:right; font-family:var(--mono); color:var(--text-muted);}
+
+  .footer-note{margin-top:40px; padding-top:16px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim); font-family:var(--mono);}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="sidebar">
+    <div id="brand">
+      <div class="logo"><span class="dot"></span> AI INSIGHT LAB</div>
+      <div class="tagline">data → stats → ml → predictions</div>
+    </div>
+    <nav id="nav"></nav>
+    <div id="sidebar-footer">
+      v1.0.0 · local instance<br/>
+      FastAPI · scikit-learn
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="topbar">
+      <div id="dataset-chip"><span class="empty">No dataset loaded</span></div>
+      <button class="btn-ghost-sm" id="change-dataset-btn" style="display:none;">Change dataset</button>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script>
+/* ============================================================
+   AI Insight Lab — frontend application (vanilla JS, no build)
+   ============================================================ */
+const API = "/api";
+
+const state = {
+  route: "home",
+  datasetLoaded: false,
+  datasetName: null,
+  overview: null,
+  columns: null,
+  modelTrained: false,
+  lastTrainResult: null,
+  mlOptions: null,
+};
+
+// ---------------------------------------------------------- api helper
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, opts);
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* no body */ }
+  if (!res.ok) {
+    const msg = (data && data.detail) ? data.detail : `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function toast(message, type = "danger") {
+  const el = document.createElement("div");
+  el.className = "toast" + (type === "info" ? " info" : "");
+  el.textContent = message;
+  document.getElementById("toast-wrap").appendChild(el);
+  setTimeout(() => el.remove(), 5500);
+}
+
+// -------------------------------------------------------------- routes
+const NAV_ITEMS = [
+  { section: "Data" },
+  { id: "home", label: "Data Source", icon: "◆", alwaysUnlocked: true },
+  { id: "overview", label: "Overview", icon: "▤" },
+  { id: "quality", label: "Data Quality", icon: "▲" },
+  { section: "Analysis" },
+  { id: "stats", label: "Statistics", icon: "∑" },
+  { id: "viz", label: "Visualizations", icon: "◫" },
+  { section: "Machine Learning" },
+  { id: "train", label: "Train Model", icon: "▶" },
+  { id: "predict", label: "Predict", icon: "→", requiresModel: true },
+];
+
+function renderNav() {
+  const nav = document.getElementById("nav");
+  nav.innerHTML = "";
+  NAV_ITEMS.forEach(item => {
+    if (item.section) {
+      const label = document.createElement("div");
+      label.className = "nav-section-label";
+      label.textContent = item.section;
+      nav.appendChild(label);
+      return;
+    }
+    const locked = !item.alwaysUnlocked && !state.datasetLoaded;
+    const modelLocked = item.requiresModel && !state.modelTrained;
+    const el = document.createElement("div");
+    el.className = "nav-item" + (state.route === item.id ? " active" : "") + ((locked || modelLocked) ? " locked" : "");
+    el.innerHTML = `<span class="ic">${item.icon}</span><span>${item.label}</span>`;
+    el.onclick = () => {
+      if (locked) { toast("Load a dataset first.", "info"); return; }
+      if (modelLocked) { toast("Train a model first.", "info"); return; }
+      navigate(item.id);
+    };
+    nav.appendChild(el);
+  });
+}
+
+function navigate(route) {
+  state.route = route;
+  renderNav();
+  renderContent();
+}
+
+// -------------------------------------------------------------- topbar
+function renderTopbar() {
+  const chip = document.getElementById("dataset-chip");
+  const changeBtn = document.getElementById("change-dataset-btn");
+  if (!state.datasetLoaded) {
+    chip.innerHTML = `<span class="empty">No dataset loaded</span>`;
+    changeBtn.style.display = "none";
+    return;
+  }
+  const o = state.overview;
+  chip.innerHTML = `
+    <span class="name">${escapeHtml(state.datasetName)}</span>
+    <span class="stats">${o.rows.toLocaleString()} rows · ${o.columns} cols · ${o.missing_values} missing · ${o.duplicate_rows} dup</span>
+  `;
+  changeBtn.style.display = "inline-block";
+  changeBtn.onclick = () => navigate("home");
+}
+
+document.getElementById("change-dataset-btn").onclick = () => navigate("home");
+
+// -------------------------------------------------------------- render
+function renderContent() {
+  const el = document.getElementById("content");
+  el.innerHTML = `<div class="loading-row"><span class="spinner"></span> Loading…</div>`;
+  const routes = {
+    home: renderHome,
+    overview: renderOverview,
+    quality: renderQuality,
+    stats: renderStats,
+    viz: renderViz,
+    train: renderTrain,
+    predict: renderPredict,
+  };
+  (routes[state.route] || renderHome)(el);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function fmt(n) {
+  if (n === null || n === undefined || Number.isNaN(n)) return "—";
+  if (typeof n !== "number") return n;
+  return Number.isInteger(n) ? n.toLocaleString() : n.toLocaleString(undefined, { maximumFractionDigits: 4 });
+}
+
+/* ============================================================ HOME */
+const SAMPLE_META = {
+  house_prices: { icon: "🏠", desc: "Regression · 400 rows" },
+  customer_churn: { icon: "📉", desc: "Classification · 500 rows" },
+  student_performance: { icon: "🎓", desc: "Regression · 350 rows" },
+  employee_salary: { icon: "💼", desc: "Regression · 300 rows" },
+  iris_species: { icon: "🌸", desc: "Classification · 150 rows" },
+};
+
+async function renderHome(el) {
+  let samples = [];
+  try { samples = await api("/samples"); } catch (e) { toast(e.message); }
+
+  el.innerHTML = `
+    <div id="home-hero">
+      <h1>Upload a dataset. Get the full analysis.</h1>
+      <p>Drop in a CSV and AI Insight Lab handles cleaning checks, statistics, visualizations,
+      and model training end-to-end — no notebook required.</p>
+    </div>
+    <div id="dropzone">
+      <div class="icon">⇪</div>
+      <div>Drag a CSV here, or <span style="color:var(--accent); text-decoration:underline;">click to browse</span></div>
+      <div class="hint">.csv · up to 25MB</div>
+      <input type="file" id="file-input" accept=".csv" style="display:none;" />
+    </div>
+    <div class="section-title">Or start from a sample dataset <span class="tag">no upload needed</span></div>
+    <div class="sample-grid" id="sample-grid"></div>
+  `;
+
+  const grid = document.getElementById("sample-grid");
+  samples.forEach(s => {
+    const meta = SAMPLE_META[s.key] || { icon: "▤", desc: "" };
+    const card = document.createElement("div");
+    card.className = "sample-card";
+    card.innerHTML = `<div class="icon">${meta.icon}</div><div class="title">${escapeHtml(s.label)}</div><div class="desc">${meta.desc}</div>`;
+    card.onclick = () => loadSample(s.key);
+    grid.appendChild(card);
+  });
+
+  const dz = document.getElementById("dropzone");
+  const fi = document.getElementById("file-input");
+  dz.onclick = () => fi.click();
+  fi.onchange = () => { if (fi.files[0]) uploadFile(fi.files[0]); };
+  ["dragover", "dragleave", "drop"].forEach(evt => {
+    dz.addEventListener(evt, e => {
+      e.preventDefault();
+      dz.classList.toggle("drag", evt === "dragover");
+      if (evt === "drop" && e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]);
+    });
+  });
+}
+
+async function afterDatasetLoaded(resp) {
+  state.datasetLoaded = true;
+  state.datasetName = resp.dataset_name;
+  state.overview = resp.overview;
+  state.modelTrained = false;
+  state.mlOptions = null;
+  renderTopbar();
+  renderNav();
+  navigate("overview");
+}
+
+async function uploadFile(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  const content = document.getElementById("content");
+  content.innerHTML = `<div class="loading-row"><span class="spinner"></span> Parsing ${escapeHtml(file.name)}…</div>`;
+  try {
+    const resp = await api("/upload", { method: "POST", body: fd });
+    toast(`Loaded ${resp.dataset_name} — ${resp.overview.rows} rows.`, "info");
+    afterDatasetLoaded(resp);
+  } catch (e) { toast(e.message); renderHome(content); }
+}
+
+async function loadSample(key) {
+  const content = document.getElementById("content");
+  content.innerHTML = `<div class="loading-row"><span class="spinner"></span> Loading sample dataset…</div>`;
+  try {
+    const resp = await api(`/samples/${key}`, { method: "POST" });
+    toast(`Loaded ${resp.dataset_name}.`, "info");
+    afterDatasetLoaded(resp);
+  } catch (e) { toast(e.message); renderHome(content); }
+}
+
+/* ============================================================ OVERVIEW */
+async function renderOverview(el) {
+  let data;
+  try { data = await api("/summary"); } catch (e) { toast(e.message); return; }
+  const o = data.overview;
+
+  el.innerHTML = `
+    <h1 class="page-title">Dataset Overview</h1>
+    <p class="page-sub">${escapeHtml(data.dataset_name)}</p>
+    <div class="grid grid-4" style="margin-bottom:22px;">
+      ${statCard("Rows", fmt(o.rows))}
+      ${statCard("Columns", fmt(o.columns))}
+      ${statCard("Numerical", fmt(o.numerical_features), "accent")}
+      ${statCard("Categorical", fmt(o.categorical_features), "accent")}
+      ${statCard("Missing Values", fmt(o.missing_values), o.missing_values > 0 ? "warn" : "")}
+      ${statCard("Duplicate Rows", fmt(o.duplicate_rows), o.duplicate_rows > 0 ? "warn" : "")}
+      ${statCard("Memory", o.memory_usage_kb + " KB")}
+      ${statCard("Health", o.missing_values === 0 && o.duplicate_rows === 0 ? "Clean" : "Needs review", o.missing_values === 0 && o.duplicate_rows === 0 ? "" : "warn")}
+    </div>
+    <div class="card">
+      <div class="section-title">Column Profile <span class="tag">${data.columns.length} columns</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Type</th><th>Missing</th><th>Unique</th><th>Mean</th><th>Std</th><th>Min</th><th>Max</th></tr></thead>
+          <tbody>
+            ${data.columns.map(c => `
+              <tr>
+                <td class="name-cell">${escapeHtml(c.name)}</td>
+                <td>${c.is_numeric ? '<span class="badge ok">numeric</span>' : '<span class="badge warn">categorical</span>'}</td>
+                <td>${c.missing_count > 0 ? `${c.missing_count} (${c.missing_pct}%)` : "0"}</td>
+                <td>${fmt(c.unique_count)}</td>
+                <td>${c.is_numeric ? fmt(c.mean) : (c.top_value ? escapeHtml(c.top_value) : "—")}</td>
+                <td>${c.is_numeric ? fmt(c.std) : "—"}</td>
+                <td>${c.is_numeric ? fmt(c.min) : "—"}</td>
+                <td>${c.is_numeric ? fmt(c.max) : "—"}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function statCard(label, value, tone) {
+  return `<div class="card stat-card"><div class="label">${label}</div><div class="value ${tone || ""}">${value}</div></div>`;
+}
+
+/* ============================================================ QUALITY */
+async function renderQuality(el) {
+  let data;
+  try { data = await api("/eda"); } catch (e) { toast(e.message); return; }
+
+  el.innerHTML = `
+    <h1 class="page-title">Data Quality</h1>
+    <p class="page-sub">Missing values and outliers detected in the dataset. Nothing is changed automatically.</p>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="section-title">Missing Values <span class="tag">${data.missing_values.length} affected columns</span></div>
+      ${data.missing_values.length === 0 ? `<div class="empty-state">No missing values detected. Dataset is complete.</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Missing Count</th><th>Missing %</th><th>Suggested Strategy</th><th>Apply</th></tr></thead>
+          <tbody id="missing-tbody">
+            ${data.missing_values.map(m => `
+              <tr data-col="${escapeHtml(m.column)}">
+                <td class="name-cell">${escapeHtml(m.column)}</td>
+                <td>${m.missing_count}</td>
+                <td>${m.missing_pct}%</td>
+                <td>${escapeHtml(m.recommended_strategy)}</td>
+                <td>
+                  <select class="strategy-select" data-col="${escapeHtml(m.column)}">
+                    <option value="mean">Mean</option>
+                    <option value="median" selected>Median</option>
+                    <option value="mode">Mode</option>
+                    <option value="drop_rows">Drop rows</option>
+                    <option value="drop_column">Drop column</option>
+                  </select>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:14px;"><button class="btn" id="apply-clean-btn">Apply cleaning strategy</button></div>
+      `}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Outliers (IQR method) <span class="tag">${data.outliers.length} affected columns</span></div>
+      ${data.outliers.length === 0 ? `<div class="empty-state">No outliers detected across numerical columns.</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Lower Bound</th><th>Upper Bound</th><th>Outlier Count</th><th>Outlier %</th></tr></thead>
+          <tbody>
+            ${data.outliers.map(o => `
+              <tr>
+                <td class="name-cell">${escapeHtml(o.column)}</td>
+                <td>${fmt(o.lower_bound)}</td>
+                <td>${fmt(o.upper_bound)}</td>
+                <td>${o.outlier_count}</td>
+                <td><span class="badge ${o.outlier_pct > 10 ? 'bad' : 'warn'}">${o.outlier_pct}%</span></td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:11.5px; color:var(--text-dim); margin-top:12px;">Outliers are flagged for review, not removed automatically. Inspect before excluding real data points.</p>
+      `}
+    </div>
+  `;
+
+  const applyBtn = document.getElementById("apply-clean-btn");
+  if (applyBtn) {
+    applyBtn.onclick = async () => {
+      const selects = document.querySelectorAll("#missing-tbody .strategy-select");
+      const strategy = {};
+      selects.forEach(s => { strategy[s.dataset.col] = s.value; });
+      applyBtn.disabled = true;
+      applyBtn.textContent = "Applying…";
+      try {
+        const resp = await api("/clean", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ strategy }),
+        });
+        state.overview = resp.overview;
+        state.modelTrained = false;
+        renderTopbar(); renderNav();
+        toast("Cleaning strategy applied.", "info");
+        renderQuality(el);
+      } catch (e) { toast(e.message); applyBtn.disabled = false; applyBtn.textContent = "Apply cleaning strategy"; }
+    };
+  }
+}
+
+/* ============================================================ STATS */
+async function renderStats(el) {
+  let data;
+  try { data = await api("/eda"); } catch (e) { toast(e.message); return; }
+
+  el.innerHTML = `
+    <h1 class="page-title">Statistics</h1>
+    <p class="page-sub">Descriptive statistics, distribution shape, and relationships between features.</p>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="section-title">Numerical Summary</div>
+      ${data.numerical_summary.length === 0 ? `<div class="empty-state">No numerical columns in this dataset.</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Mean</th><th>Std</th><th>Min</th><th>Q1</th><th>Median</th><th>Q3</th><th>Max</th><th>Skew</th><th>Kurtosis</th></tr></thead>
+          <tbody>
+            ${data.numerical_summary.map(r => `
+              <tr>
+                <td class="name-cell">${escapeHtml(r.column)}</td>
+                <td>${fmt(r.mean)}</td><td>${fmt(r.std)}</td><td>${fmt(r.min)}</td>
+                <td>${fmt(r.q25)}</td><td>${fmt(r.median)}</td><td>${fmt(r.q75)}</td><td>${fmt(r.max)}</td>
+                <td>${fmt(r.skewness)}</td><td>${fmt(r.kurtosis)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="section-title">Categorical Summary</div>
+      ${data.categorical_summary.length === 0 ? `<div class="empty-state">No categorical columns in this dataset.</div>` : `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Column</th><th>Unique Values</th><th>Most Frequent</th><th>Frequency</th></tr></thead>
+          <tbody>
+            ${data.categorical_summary.map(r => `
+              <tr>
+                <td class="name-cell">${escapeHtml(r.column)}</td>
+                <td>${fmt(r.unique_count)}</td>
+                <td>${escapeHtml(r.top_value)}</td>
+                <td>${fmt(r.top_frequency)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Notable Correlations</div>
+      ${data.top_correlations.length === 0 ? `<div class="empty-state">Not enough numerical columns to compute correlations.</div>` : `
+        ${data.top_correlations.map(c => `
+          <div class="kv-row">
+            <span class="k">${escapeHtml(c.description)}</span>
+            <span class="v">r = ${c.correlation}</span>
+          </div>`).join("")}
+        <p style="font-size:11px; color:var(--text-dim); margin-top:12px;">Correlation does not imply causation.</p>
+      `}
+    </div>
+  `;
+}
+
+/* ============================================================ VIZ */
+async function renderViz(el) {
+  el.innerHTML = `<h1 class="page-title">Visualizations</h1><p class="page-sub">Generating charts…</p><div class="loading-row"><span class="spinner"></span></div>`;
+  let data;
+  try { data = await api("/visualizations"); } catch (e) { toast(e.message); return; }
+
+  const chartBlock = (title, key, note) => data[key]
+    ? `<div class="card" style="margin-bottom:18px;">
+         <div class="section-title">${title}</div>
+         <img class="chart" src="${data[key]}" alt="${title}" />
+         ${note ? `<p style="font-size:11px; color:var(--text-dim); margin-top:10px;">${note}</p>` : ""}
+       </div>`
+    : "";
+
+  el.innerHTML = `
+    <h1 class="page-title">Visualizations</h1>
+    <p class="page-sub">Auto-generated from the current dataset's column types.</p>
+    ${chartBlock("Distributions", "histograms")}
+    ${chartBlock("Spread &amp; Outliers", "boxplots")}
+    ${chartBlock("Correlation Matrix", "correlation_heatmap", "Darker cells indicate stronger linear relationships.")}
+    ${chartBlock("Categorical Breakdown", "categorical_bars")}
+    ${(!data.histograms && !data.boxplots && !data.correlation_heatmap && !data.categorical_bars)
+      ? `<div class="empty-state">Not enough data to generate charts for this dataset.</div>` : ""}
+  `;
+}
+
+/* ============================================================ TRAIN */
+async function renderTrain(el) {
+  let opts;
+  try { opts = await api("/ml/options"); state.mlOptions = opts; } catch (e) { toast(e.message); return; }
+
+  el.innerHTML = `
+    <h1 class="page-title">Train a Model</h1>
+    <p class="page-sub">Pick a target column, choose your features, and train. Preprocessing (imputation, scaling, encoding) is handled automatically and fit only on the training split.</p>
+
+    <div class="card" style="margin-bottom:18px;">
+      <div class="grid grid-2" style="margin-bottom:16px;">
+        <div>
+          <label class="field-label">Target column</label>
+          <select id="target-select"></select>
+        </div>
+        <div>
+          <label class="field-label">Problem type</label>
+          <select id="problem-type-select">
+            <option value="classification">Classification</option>
+            <option value="regression">Regression</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field-label">Feature columns</label>
+      <div class="checkbox-grid" id="feature-grid" style="margin-bottom:16px;"></div>
+
+      <div class="grid grid-3" style="margin-bottom:16px;">
+        <div>
+          <label class="field-label">Model</label>
+          <select id="model-select"></select>
+        </div>
+        <div>
+          <label class="field-label">Test set size</label>
+          <select id="test-size-select">
+            <option value="0.1">10%</option>
+            <option value="0.2" selected>20%</option>
+            <option value="0.3">30%</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Cross-validation</label>
+          <select id="cv-select">
+            <option value="">Off</option>
+            <option value="3">K = 3</option>
+            <option value="5" selected>K = 5</option>
+            <option value="10">K = 10</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn" id="train-btn">Train Model</button>
+      <span id="train-status" style="margin-left:12px; font-size:12px; color:var(--text-muted);"></span>
+    </div>
+
+    <div id="train-results"></div>
+  `;
+
+  const targetSelect = document.getElementById("target-select");
+  opts.columns.forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    targetSelect.appendChild(o);
+  });
+
+  const problemTypeSelect = document.getElementById("problem-type-select");
+  const modelSelect = document.getElementById("model-select");
+  const featureGrid = document.getElementById("feature-grid");
+
+  function populateModels() {
+    const type = problemTypeSelect.value;
+    const models = type === "classification" ? opts.classification_models : opts.regression_models;
+    modelSelect.innerHTML = "";
+    models.forEach(m => {
+      const o = document.createElement("option");
+      o.value = m; o.textContent = prettyModelName(m);
+      modelSelect.appendChild(o);
+    });
+  }
+
+  function populateFeatures() {
+    const target = targetSelect.value;
+    featureGrid.innerHTML = "";
+    opts.columns.filter(c => c !== target).forEach(c => {
+      const isNumeric = opts.numerical.includes(c);
+      const id = "feat-" + c.replace(/[^a-zA-Z0-9]/g, "_");
+      const item = document.createElement("label");
+      item.className = "check-item";
+      item.innerHTML = `<input type="checkbox" id="${id}" value="${escapeHtml(c)}" checked /> ${escapeHtml(c)} <span style="color:var(--text-dim); font-family:var(--mono); font-size:10.5px;">${isNumeric ? "num" : "cat"}</span>`;
+      featureGrid.appendChild(item);
+    });
+  }
+
+  async function suggestProblemType() {
+    try {
+      const r = await api(`/ml/suggest-problem-type?target=${encodeURIComponent(targetSelect.value)}`);
+      problemTypeSelect.value = r.problem_type;
+      populateModels();
+    } catch (e) { /* non-fatal */ }
+  }
+
+  targetSelect.onchange = async () => { await suggestProblemType(); populateFeatures(); };
+  problemTypeSelect.onchange = populateModels;
+
+  populateFeatures();
+  await suggestProblemType();
+
+  document.getElementById("train-btn").onclick = () => runTraining(el);
+}
+
+function prettyModelName(m) {
+  return m.split("_").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
+}
+
+async function runTraining(el) {
+  const target = document.getElementById("target-select").value;
+  const problemType = document.getElementById("problem-type-select").value;
+  const modelName = document.getElementById("model-select").value;
+  const testSize = parseFloat(document.getElementById("test-size-select").value);
+  const cv = document.getElementById("cv-select").value;
+  const features = Array.from(document.querySelectorAll("#feature-grid input:checked")).map(i => i.value);
+
+  const statusEl = document.getElementById("train-status");
+  const btn = document.getElementById("train-btn");
+  const resultsEl = document.getElementById("train-results");
+
+  if (features.length === 0) { toast("Select at least one feature column."); return; }
+
+  btn.disabled = true;
+  statusEl.innerHTML = `<span class="spinner"></span> Training ${prettyModelName(modelName)}…`;
+  resultsEl.innerHTML = "";
+
+  try {
+    const resp = await api("/ml/train", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        target, features, problem_type: problemType, model_name: modelName,
+        test_size: testSize, cv_folds: cv ? parseInt(cv) : null,
+      }),
+    });
+    state.modelTrained = true;
+    state.lastTrainResult = resp;
+    renderNav();
+    statusEl.textContent = "";
+    resultsEl.innerHTML = renderTrainResults(resp);
+    toast(`${prettyModelName(modelName)} trained successfully.`, "info");
+  } catch (e) {
+    toast(e.message);
+    statusEl.textContent = "";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderTrainResults(r) {
+  const m = r.metrics;
+  let metricCards = "";
+  if (r.problem_type === "classification") {
+    metricCards = `
+      ${statCard("Test Accuracy", (m.test_accuracy * 100).toFixed(1) + "%", "accent")}
+      ${statCard("Precision", m.precision)}
+      ${statCard("Recall", m.recall)}
+      ${statCard("F1 Score", m.f1_score)}
+      ${m.cv_mean !== undefined ? statCard(`CV Mean (k=${m.cv_folds})`, m.cv_mean + " ± " + m.cv_std) : ""}
+      ${statCard("Train Time", m.training_time_sec + "s")}
+    `;
+  } else {
+    metricCards = `
+      ${statCard("Test R²", m.test_r2, "accent")}
+      ${statCard("MAE", fmt(m.mae))}
+      ${statCard("RMSE", fmt(m.rmse))}
+      ${statCard("Train R²", m.train_r2)}
+      ${m.cv_mean !== undefined ? statCard(`CV Mean (k=${m.cv_folds})`, m.cv_mean + " ± " + m.cv_std) : ""}
+      ${statCard("Train Time", m.training_time_sec + "s")}
+    `;
+  }
+
+  const charts = r.charts || {};
+  const chartTitles = {
+    confusion_matrix: "Confusion Matrix",
+    actual_vs_predicted: "Actual vs Predicted",
+    residuals: "Residual Plot",
+    feature_importance: "Feature Importance",
+  };
+
+  return `
+    <div class="card" style="margin-bottom:18px;">
+      <div class="section-title">Results <span class="tag">${prettyModelName(r.model_name)} · ${r.problem_type}</span></div>
+      <div class="grid grid-4">${metricCards}</div>
+    </div>
+    <div class="grid grid-2">
+      ${Object.keys(charts).map(k => `
+        <div class="card">
+          <div class="section-title">${chartTitles[k] || k}</div>
+          <img class="chart" src="${charts[k]}" alt="${k}" />
+        </div>`).join("")}
+    </div>
+    <div style="margin-top:18px; display:flex; gap:10px;">
+      <button class="btn secondary" onclick="window.open('${API}/ml/download-model','_blank')">Download model (.joblib)</button>
+      <button class="btn" onclick="navigate('predict')">Go to Predict →</button>
+    </div>
+  `;
+}
+
+/* ============================================================ PREDICT */
+async function renderPredict(el) {
+  let modelInfo, eda, summary;
+  try {
+    [modelInfo, eda, summary] = await Promise.all([
+      api("/ml/model-info"), api("/eda"), api("/summary"),
+    ]);
+  } catch (e) { toast(e.message); return; }
+
+  const colProfileByName = {};
+  summary.columns.forEach(c => { colProfileByName[c.name] = c; });
+  const catByName = {};
+  eda.categorical_summary.forEach(c => { catByName[c.column] = c; });
+
+  el.innerHTML = `
+    <h1 class="page-title">Predict</h1>
+    <p class="page-sub">Model: <span class="mono" style="color:var(--accent);">${prettyModelName(modelInfo.model_name)}</span> · target <span class="mono">${escapeHtml(modelInfo.target)}</span> · ${modelInfo.problem_type}</p>
+
+    <div class="col-flex">
+      <div class="card">
+        <div class="section-title">Input Features</div>
+        <div id="predict-form" style="display:flex; flex-direction:column; gap:12px;"></div>
+        <button class="btn" id="predict-btn" style="margin-top:16px;">Predict</button>
+      </div>
+      <div class="card">
+        <div class="section-title">Result</div>
+        <div id="predict-result"><div class="empty-state">Fill in the feature values and click Predict.</div></div>
+      </div>
+    </div>
+  `;
+
+  const form = document.getElementById("predict-form");
+  modelInfo.features.forEach(f => {
+    const wrap = document.createElement("div");
+    const profile = colProfileByName[f];
+    const isNumeric = modelInfo.numerical_features.includes(f);
+    const inputId = "pf-" + f.replace(/[^a-zA-Z0-9]/g, "_");
+    if (isNumeric) {
+      const placeholder = profile ? fmt(profile.mean) : "";
+      wrap.innerHTML = `<label class="field-label">${escapeHtml(f)} <span style="color:var(--text-dim);">(avg: ${placeholder})</span></label>
+        <input type="number" step="any" id="${inputId}" placeholder="${placeholder}" />`;
+    } else {
+      const cats = catByName[f];
+      const listId = inputId + "-list";
+      const options = cats ? cats.top_categories.map(o => `<option value="${escapeHtml(o.value)}">`).join("") : "";
+      wrap.innerHTML = `<label class="field-label">${escapeHtml(f)} <span style="color:var(--text-dim);">(e.g. ${cats ? escapeHtml(cats.top_value) : "—"})</span></label>
+        <input type="text" list="${listId}" id="${inputId}" placeholder="${cats ? escapeHtml(cats.top_value) : ''}" />
+        <datalist id="${listId}">${options}</datalist>`;
+    }
+    form.appendChild(wrap);
+  });
+
+  document.getElementById("predict-btn").onclick = async () => {
+    const values = {};
+    let ok = true;
+    modelInfo.features.forEach(f => {
+      const inputId = "pf-" + f.replace(/[^a-zA-Z0-9]/g, "_");
+      const input = document.getElementById(inputId);
+      let v = input.value;
+      if (v === "") {
+        const profile = colProfileByName[f];
+        v = modelInfo.numerical_features.includes(f) && profile ? profile.mean : input.placeholder;
+      }
+      if (modelInfo.numerical_features.includes(f)) v = parseFloat(v);
+      if (v === undefined || v === null || v === "" || (typeof v === "number" && Number.isNaN(v))) ok = false;
+      values[f] = v;
+    });
+    if (!ok) { toast("Please fill in every feature."); return; }
+
+    const resultEl = document.getElementById("predict-result");
+    resultEl.innerHTML = `<div class="loading-row"><span class="spinner"></span> Predicting…</div>`;
+    try {
+      const resp = await api("/ml/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ values }),
+      });
+      resultEl.innerHTML = renderPredictResult(resp, modelInfo);
+    } catch (e) { toast(e.message); resultEl.innerHTML = `<div class="empty-state">Prediction failed.</div>`; }
+  };
+}
+
+function renderPredictResult(resp, modelInfo) {
+  let html = `<div class="stat-card" style="border:none; padding:0;">
+    <div class="label">Predicted ${escapeHtml(modelInfo.target)}</div>
+    <div class="value accent" style="font-size:28px;">${typeof resp.prediction === "number" ? fmt(Math.round(resp.prediction * 10000) / 10000) : escapeHtml(resp.prediction)}</div>
+  </div>`;
+  if (resp.probabilities) {
+    const entries = Object.entries(resp.probabilities).sort((a, b) => b[1] - a[1]);
+    html += `<div class="prob-bar-wrap">`;
+    entries.forEach(([label, p]) => {
+      html += `<div class="prob-bar-row">
+        <span class="lbl">${escapeHtml(label)}</span>
+        <span class="prob-bar-track"><span class="prob-bar-fill" style="width:${(p * 100).toFixed(1)}%;"></span></span>
+        <span class="prob-bar-pct">${(p * 100).toFixed(1)}%</span>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  return html;
+}
+
+/* ============================================================ boot */
+renderNav();
+renderTopbar();
+renderContent();
+</script>
+</body>
+</html>
