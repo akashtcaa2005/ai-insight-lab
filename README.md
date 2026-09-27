@@ -41,7 +41,7 @@ ai-insight-lab/
 
 ## Setup
 
-Requires Python 3.10+.
+Requires Python 3.10+ for local development. For Streamlit Cloud deployment, use Python 3.12 via `runtime.txt`.
 
 ```bash
 cd backend
@@ -49,6 +49,10 @@ python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+## Streamlit Cloud deployment note
+
+This project uses a Python 3.12 runtime and a compatible dependency set to avoid the Pillow/zlib build failure seen on Python 3.14. Keep the root `requirements.txt` and `runtime.txt` as the single deployment configuration.
 
 ## Run
 
