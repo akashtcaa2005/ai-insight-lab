@@ -109,8 +109,14 @@ def train_model(
     cv_folds: int | None = None,
 ) -> TrainedModel:
     data = df[features + [target]].dropna(subset=[target]).copy()
+    if data.empty:
+        raise ValueError("No usable rows remain after dropping missing target values.")
+
     X = data[features]
     y = data[target]
+
+    if y.nunique() <= 1:
+        raise ValueError("The target column must contain at least two distinct values to train a model.")
 
     numerical, categorical = split_columns(X)
     preprocessor = build_preprocessor(numerical, categorical)
@@ -123,6 +129,19 @@ def train_model(
     if problem_type == "classification":
         y = y.astype(str)
         class_labels = sorted(y.unique().tolist())
+        class_counts = y.value_counts()
+        if len(class_counts) < 2:
+            raise ValueError("The target column must contain at least two classes for classification.")
+        if class_counts.min() < 2:
+            raise ValueError(
+                "Each class must have at least 2 rows to train and validate a model. "
+                "Choose a different target or merge rare categories."
+            )
+        if len(y) < 4:
+            raise ValueError("Classification training requires at least 4 non-missing rows.")
+
+    if problem_type == "regression" and y.nunique() <= 1:
+        raise ValueError("Regression target is constant; choose a different target column.")
 
     stratify = y if problem_type == "classification" and y.nunique() > 1 else None
     X_train, X_test, y_train, y_test = train_test_split(
